@@ -7,15 +7,13 @@
 #include <DallasTemperature.h>
 
 RTC_DS3231 rtc;
-int relay01 = 9;
-int relay02 = 6;
+int relay01 = 6;
+int relay02 = 9;
 const int LED01 = 12;
 const int LED02 = 13;
 
+const long interval = 5000;
 LiquidCrystal_I2C lcd(0x27, 20, 4);
-
-
-
 byte A_acute[8] = {
     B00100,  // Tilde
     B00000,  // Espacio para separar la tilde
@@ -49,6 +47,7 @@ byte customChar[8] = {
   B00100,
   B00000
 };
+
 
 void setup() {
    //HOLA MUNDOOOOOOOOOOOOOOOOOOO GAAAAAAAAAAAAAA
@@ -109,41 +108,35 @@ void setup() {
     lcd.print("NUCO");
     delay(4000);
     lcd.clear();
-
     lcd.createChar(0, customChar);
     lcd.init();
     lcd.backlight();
   
-  // Imprimir en la primera fila
-  lcd.setCursor(0, 0);
-  lcd.print("STARTING...  ( )/");
-  
-  // Imprimir en la segunda fila
-  lcd.setCursor(0, 1);
-  lcd.print("              )(/");
+    // Imprimir en la primera fila
+    lcd.setCursor(0, 0);
+    lcd.print("STARTING...  ( )/");
+    
+    // Imprimir en la segunda fila
+    lcd.setCursor(0, 1);
+    lcd.print("              )(/");
 
-  // Imprimir en la tercera fila
-  lcd.setCursor(0, 2);
-  lcd.print(" ____________( /)");
+    // Imprimir en la tercera fila
+    lcd.setCursor(0, 2);
+    lcd.print(" ____________( /)");
 
-  // Imprimir en la cuarta fila
-  lcd.setCursor(0, 3);
-  lcd.print("()__)________)))");
-  lcd.write(byte(0));
-  delay(3000);
+    // Imprimir en la cuarta fila
+    lcd.setCursor(0, 3);
+    lcd.print("()__)________)))");
+    lcd.write(byte(0));
+    delay(3000);
 
     lcd.init();
-    lcd.backlight();
-    
-
-    
+    lcd.backlight();  
 }
 
 void loop() {
 
     DateTime HoraActual = rtc.now();
-
-    // hora
     lcd.setCursor(0, 0);
     lcd.print("Hora: ");
     if (HoraActual.hour() < 10) lcd.print("0");  
@@ -156,56 +149,52 @@ void loop() {
     lcd.print(HoraActual.second());
 
     //ESTADO DE LAS VALVULAS
-
-
-
     // Válvula-01
+
     if (HoraActual.second() == 1) {
-        digitalWrite(relay02, LOW); 
-        digitalWrite(LED01, HIGH);  
+        digitalWrite(relay01, LOW); 
+        digitalWrite(LED01, HIGH); 
+        if(HoraActual.second()==1) 
         lcd.setCursor(0, 1);
         lcd.print("Valvula[01] --> ON");
-    } else if (HoraActual.second() == 5) {
-      lcd.createChar(2, a_acute);
-        digitalWrite(relay02, HIGH);  
+        
+     } else if (HoraActual.second() == 5) {
+        lcd.createChar(2, a_acute);
+        digitalWrite(relay01, HIGH);  
         digitalWrite(LED01, LOW);    
         lcd.setCursor(0, 1);
         lcd.print("V");
         lcd.write(byte(2));
         lcd.print("lvula[01] <--> OFF");
+      
     }
 
      // Válvula-02
     if (HoraActual.second() == 7) {   // RANG0 DE FECHA
-        digitalWrite(relay01, LOW);  
+        digitalWrite(relay02, LOW);  
         digitalWrite(LED02, HIGH);   
         lcd.setCursor(0, 1);
         lcd.print("Valvula[02] --> ON");
+        
     } else if (HoraActual.second() == 10) { // RANGO DE FECHA
-        digitalWrite(relay01, HIGH); 
+        digitalWrite(relay02, HIGH); 
         digitalWrite(LED02, LOW);    
         lcd.setCursor(0, 1);
         lcd.print("Valvula[02] <--> OFF");
+       
     }
-
-    delay(500);
-
-
-  //SENSOR DE TEMP
+       
+    //SENSOR DE TEMP
     #define ONE_WIRE_BUS 2
     OneWire oneWire(ONE_WIRE_BUS);
     DallasTemperature sensors(&oneWire);
- 
-   
+
     //Serial.begin(9600);
     sensors.begin();   //Se inicia el sensor
-
     sensors.requestTemperatures();
     float tempC = sensors.getTempCByIndex(0);
-
     char tempString[10];
     dtostrf(tempC, 5, 2, tempString);
-
     lcd.clear();
     lcd.setCursor(3, 2);
     lcd.print("TEMP: ");
@@ -213,6 +202,5 @@ void loop() {
     lcd.print(" ");
     lcd.write(223); 
     lcd.print("C");
-
 
 }
