@@ -143,7 +143,7 @@ void loop() {
         Serial.println("Electroválvula 02 APAGADA - Fin");   
     }
     // Registrar e imprimir datos cada 6 horas
-    if ((HoraActual.second() == 6 || HoraActual.second() == 12 || HoraActual.second() == 18) && HoraActual.hour() != lastLoggedHour) {
+    if ((HoraActual.hour() == 6 || HoraActual.hour() == 12 || HoraActual.hour() == 18) && HoraActual.hour() != lastLoggedHour) {
       
         // Imprimir en Serial
         Serial.println("---- Registro ----");
@@ -172,7 +172,7 @@ void loop() {
         Serial.println("------------------");
 
         // Actualizar la última hora registrada
-        lastLoggedHour = HoraActual.second();
+        lastLoggedHour = HoraActual.hour();
     }
 
    delay(1000);
