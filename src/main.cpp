@@ -2,33 +2,23 @@
 #include <SPI.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
-#include <RTClib.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#include <RTClib.h>
+
 
 RTC_DS3231 rtc;
+
 const int relay01 = 6;
 const int relay02 = 9;
 const int LED01 = 3;
 const int LED02 = 5;
-
-int lastSecond = -1;
-int lastMinute = -1;
-int lastHour = -1;
 float lastTemp = -1.0;
-
-unsigned int lastDay = 0;
-unsigned int lastMonth = 0;
-unsigned int lastYear = 0;
-
-LiquidCrystal_I2C lcd(0x27, 20, 4); // 0x20 para Proteus, 0x27 para Arduino
-
+int lastLoggedHour = -1;
+LiquidCrystal_I2C lcd(0x27, 20, 4); // 0x27 para la mayoría de los LCD I2C
 #define ONE_WIRE_BUS 2
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
-
-float lastTempC = NAN; // Variable para almacenar la última temperatura
-int lastLoggedHour = -1; // Variable para controlar la última hora registrada
 
 void setup() {
     Serial.begin(9600);  // Configuración para Virtual Terminal
@@ -45,13 +35,14 @@ void setup() {
     lcd.print("ARDUINO ENCENDIDO");
     delay(2000);
     lcd.clear();
+
     // Inicialización del RTC
     if (!rtc.begin()) {
         Serial.println("RTC no encontrado");
         while (1); // Detener si no se encuentra el RTC
     }
-    rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); // Ajustar fecha y hora manualmente
-    Serial.println("RTC configurado con éxito");
+  //  rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); // Ajuste inicial al compilar
+  //  Serial.println("RTC configurado con éxito");
     
     // Configuración de pines
     pinMode(relay01, OUTPUT);
@@ -62,11 +53,14 @@ void setup() {
     digitalWrite(relay02, HIGH);
 
     // Inicializar sensor de temperatura
+    sensors.begin();
     Serial.println("Sistema Iniciado: Monitorizando...");
 }
 
 void loop() {
+
     DateTime HoraActual = rtc.now();
+
     sensors.requestTemperatures();
     float tempC = sensors.getTempCByIndex(0);
 
@@ -105,44 +99,31 @@ void loop() {
     }
 
     // Estado de válvulas y relés
-
- if (HoraActual.hour() == 8 && HoraActual.minute() == 30) {
+    //encender y apagar las electroválvulas en Lunes (1), Jueves (4), Sábado (6)
+    if ((HoraActual.dayOfTheWeek() == 1 || HoraActual.dayOfTheWeek() == 4 || HoraActual.dayOfTheWeek() == 6) && HoraActual.hour() == 8 && HoraActual.minute() == 30) {
         digitalWrite(relay01, LOW);
         delay(100); 
         digitalWrite(LED01, HIGH); 
-        lcd.setCursor(0, 1);
-        lcd.print("Valve[01] --> ON");
         Serial.println("Electroválvula 01 ENCENDIDA - Inicio");
-        
-    } else if (HoraActual.hour() == 8 && HoraActual.minute() == 34) {
+    } else if ((HoraActual.dayOfTheWeek() == 1 || HoraActual.dayOfTheWeek() == 4 || HoraActual.dayOfTheWeek() == 6) && HoraActual.hour() == 8 && HoraActual.minute() == 34) {
         digitalWrite(relay01, HIGH); 
         delay(100); 
         digitalWrite(LED01, LOW);    
-        lcd.setCursor(0, 1);
-        lcd.print("Valve[01] <--> OFF");
         Serial.println("Electroválvula 01 APAGADA - Fin");
-    }else {
-    lcd.setCursor(0, 1);
-    lcd.print("                    "); // Sobrescribe con espacios
     }
-       
-    if (HoraActual.hour() == 8 && HoraActual.minute() == 35) {
+    // Repetir para la válvula 02...
+    if ((HoraActual.dayOfTheWeek() == 1 || HoraActual.dayOfTheWeek() == 4 || HoraActual.dayOfTheWeek() == 6) && HoraActual.hour() == 8 && HoraActual.minute() == 35) {
         digitalWrite(relay02, LOW);
         delay(100);  
         digitalWrite(LED02, HIGH);   
-        lcd.setCursor(0, 1);
-        lcd.print("Valve[02] --> ON");
         Serial.println("Electroválvula 02 ENCENDIDA - Inicio");
-
-    } else if (HoraActual.hour() == 8 && HoraActual.minute() == 38) {
+    } else if ((HoraActual.dayOfTheWeek() == 1 || HoraActual.dayOfTheWeek() == 4 || HoraActual.dayOfTheWeek() == 6) && HoraActual.hour() == 8 && HoraActual.minute() == 38) {
         digitalWrite(relay02, HIGH); 
         delay(100);
         digitalWrite(LED02, LOW);    
-        lcd.setCursor(0, 1);
-        lcd.print("Valve[02] <--> OFF");
-        Serial.println("Electroválvula 02 APAGADA - Fin");   
-    }
-    // Registrar e imprimir datos cada 6 horas
+        Serial.println("Electroválvula 02 APAGADA - Fin");  
+     }
+
     if ((HoraActual.hour() == 6 || HoraActual.hour() == 12 || HoraActual.hour() == 18) && HoraActual.hour() != lastLoggedHour) {
       
         // Imprimir en Serial
@@ -175,5 +156,5 @@ void loop() {
         lastLoggedHour = HoraActual.hour();
     }
 
-   delay(1000);
+    delay(1000);  // Retardo de 1 segundo para evitar sobrecargar el loop
 }
